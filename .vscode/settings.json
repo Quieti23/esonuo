@@ -1,0 +1,5 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "spring-boot.ls.java.home": "",
+    "maven.terminal.useJavaHome": true
+}

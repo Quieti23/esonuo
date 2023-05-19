@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.esonsuo.project.system.file.mapper.FileMapper">
+
+	<resultMap type="File" id="FileResult">
+		<id     property="fileId"        column="file_id"         />
+		<result property="deptId"        column="dept_id"         />
+		<result property="fileName"      column="file_name"       />
+		<result property="fileType"      column="file_type"       />
+		<result property="fileSize"         column="file_size"           />
+		<result property="filePath"         column="file_path"           />
+		<result property="bucket"   column="bucket"     />
+		<result property="status"        column="status"          />
+		<result property="delFlag"       column="del_flag"        />
+		<result property="createBy"      column="create_by"       />
+		<result property="createTime"    column="create_time"     />
+		<result property="updateBy"      column="update_by"       />
+		<result property="updateTime"    column="update_time"     />
+		<result property="remark"        column="remark"          />
+		<association property="dept"     column="dept_id" javaType="Dept" resultMap="deptResult" />
+		<!-- <collection  property="roles"    javaType="java.util.List"        resultMap="RoleResult" /> -->
+	</resultMap>
+	
+	<resultMap id="deptResult" type="Dept">
+		<id     property="deptId"    column="dept_id"     />
+		<result property="parentId"  column="parent_id"   />
+		<result property="ancestors" column="ancestors"   />
+		<result property="deptName"  column="dept_name"   />
+		<result property="orderNum"  column="order_num"   />
+		<result property="leader"    column="leader"      />
+		<result property="status"    column="dept_status" />
+	</resultMap>
+	
+	<!-- <resultMap id="RoleResult" type="Role">
+		<id     property="roleId"       column="role_id"        />
+		<result property="roleName"     column="role_name"      />
+		<result property="roleKey"      column="role_key"       />
+		<result property="roleSort"     column="role_sort"      />
+		<result property="dataScope"    column="data_scope"     />
+		<result property="status"       column="role_status"    />
+	</resultMap> -->
+	
+	<sql id="selectFileVo">
+        select  u.file_id, u.dept_id, u.file_name, u.file_type, u.file_size, u.file_path, u.bucket,  u.status, u.del_flag,u.create_time, u.remark,
+       		    d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.status as dept_status
+		from sys_file u
+			 left join sys_dept d on u.dept_id = d.dept_id
+			 <!-- left join sys_file_role ur on u.file_id = ur.file_id
+			 left join sys_role r on r.role_id = ur.role_id -->
+    </sql>
+	
+	<select id="selectFileList" parameterType="File" resultMap="FileResult">
+		select u.file_id, u.dept_id, u.file_name, u.file_type, u.file_size, u.file_path, u.bucket,  u.status, u.del_flag,u.create_time, u.remark, d.dept_name, d.leader from sys_file u
+		left join sys_dept d on u.dept_id = d.dept_id
+		where u.del_flag = '0'
+		<if test="fileId != null and fileId != 0">
+			AND u.file_id = #{fileId}
+		</if>
+		<if test="fileName != null and fileName != ''">
+			AND u.file_name like concat('%', #{fileName}, '%')
+		</if>
+		<if test="status != null and status != ''">
+			AND u.status = #{status}
+		</if>
+		<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+			AND date_format(u.create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+		</if>
+		<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+			AND date_format(u.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+		</if>
+		<if test="deptId != null and deptId != 0">
+			AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE FIND_IN_SET (#{deptId},ancestors) ))
+		</if>
+		<!-- 数据范围过滤 -->
+		${params.dataScope}
+	</select>
+	
+	<select id="selectAllocatedList" parameterType="File" resultMap="FileResult">
+	    select distinct u.file_id, u.dept_id, u.file_name, u.file_type, u.file_size, u.file_path, u.bucket,  u.status, u.del_flag,u.create_time, u.remark
+	    from sys_file u
+			 left join sys_dept d on u.dept_id = d.dept_id
+	    where u.del_flag = '0'
+	    <if test="fileName != null and fileName != ''">
+			AND u.file_name like concat('%', #{fileName}, '%')
+		</if>
+		<!-- 数据范围过滤 -->
+		${params.dataScope}
+	</select>
+	
+	<select id="selectUnallocatedList" parameterType="File" resultMap="FileResult">
+	    select distinct u.file_id, u.dept_id, u.file_name, u.file_type, u.file_size, u.file_path u.bucket,  u.status, u.del_flag,u.create_time, u.remark
+	    from sys_file u
+			 left join sys_dept d on u.dept_id = d.dept_id
+	    where u.del_flag = '0' 
+	    <!-- and u.file_id not in (select u.file_id from sys_file u inner join sys_file_role ur on u.file_id = ur.file_id and ur.role_id = #{roleId}) -->
+	    <if test="fileName != null and fileName != ''">
+			AND u.file_name like concat('%', #{fileName}, '%')
+		</if>
+		<!-- 数据范围过滤 -->
+		${params.dataScope}
+	</select>
+	
+	<select id="selectFileByLoginName" parameterType="String" resultMap="FileResult">
+	    <include refid="selectFileVo"/>
+		where u.file_name = #{fileName} and u.del_flag = '0'
+	</select>
+	
+	<select id="selectFileByEmail" parameterType="String" resultMap="FileResult">
+	    <include refid="selectFileVo"/>
+		where u.email = #{email} and u.del_flag = '0'
+	</select>
+	
+	<select id="checkLoginNameUnique" parameterType="String" resultMap="FileResult">
+		select file_id, file_name from sys_file where file_name=#{fileName} and del_flag = '0' limit 1
+	</select>
+	
+	<select id="selectFileById" parameterType="Long" resultMap="FileResult">
+		<include refid="selectFileVo"/>
+		where u.file_id = #{fileId}
+	</select>
+	
+	<delete id="deleteFileById" parameterType="Long">
+ 		update sys_file set del_flag = '2' where file_id = #{fileId}
+ 	</delete>
+ 	
+ 	<delete id="deleteFileByIds" parameterType="Long">
+ 		update sys_file set del_flag = '2' where file_id in
+ 		<foreach collection="array" item="fileId" open="(" separator="," close=")">
+ 			#{fileId}
+        </foreach> 
+ 	</delete>
+ 	
+ 	<update id="updateFile" parameterType="File">
+ 		update sys_file
+ 		<set>
+ 			<if test="deptId != null and deptId != 0">dept_id = #{deptId},</if>
+ 			<if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+ 			<if test="fileType != null and fileType != ''">file_type = #{fileType},</if>
+ 			<if test="fileSize != null and fileSize != ''">file_size = #{fileSize},</if>
+ 			<if test="filePath != null and filePath != ''">file_path = #{filePath},</if>
+ 			<if test="bucket != null and bucket != ''">bucket = #{bucket},</if>
+ 			<if test="status != null and status != ''">status = #{status},</if>
+ 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			<if test="remark != null">remark = #{remark},</if>
+ 			update_time = sysdate()
+ 		</set>
+ 		where file_id = #{fileId}
+	</update>
+ 	
+ 	<insert id="insertFile" parameterType="File" useGeneratedKeys="true" keyProperty="fileId">
+ 		insert into sys_file(
+ 			<if test="fileId != null and fileId != 0">file_id,</if>
+ 			<if test="deptId != null and deptId != 0">dept_id,</if>
+ 			<if test="fileName != null and fileName != ''">file_name,</if>
+ 			<if test="fileType != null and fileType != ''">file_type,</if>
+ 			<if test="fileSize != null and fileSize != ''">file_size,</if>
+ 			<if test="filePath != null and filePath != ''">file_path,</if>
+ 			<if test="bucket != null and bucket != ''">bucket,</if>
+ 			<if test="status != null and status != ''">status,</if>
+ 			<if test="createBy != null and createBy != ''">create_by,</if>
+ 			<if test="remark != null and remark != ''">remark,</if>
+ 			create_time
+ 		)values(
+ 			<if test="fileId != null and fileId != ''">#{fileId},</if>
+ 			<if test="deptId != null and deptId != ''">#{deptId},</if>
+ 			<if test="fileName != null and fileName != ''">#{fileName},</if>
+ 			<if test="fileType != null and fileType != ''">#{fileType},</if>
+ 			<if test="fileSize != null and fileSize != ''">#{fileSize},</if>
+ 			<if test="filePath != null and filePath != ''">#{filePath},</if>
+ 			<if test="bucket != null and bucket != ''">#{bucket},</if>
+ 			<if test="status != null and status != ''">#{status},</if>
+ 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+ 			<if test="remark != null and remark != ''">#{remark},</if>
+ 			sysdate()
+ 		)
+	</insert>
+	
+</mapper> 

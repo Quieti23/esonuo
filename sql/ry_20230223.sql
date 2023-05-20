@@ -718,3 +718,25 @@ create table gen_table_column (
   update_time       datetime                                   comment '更新时间',
   primary key (column_id)
 ) engine=innodb auto_increment=1 comment = '代码生成业务表字段';
+
+CREATE TABLE `sys_file` (
+	`file_id` VARCHAR(50) NOT NULL DEFAULT 'AUTO_INCREMENT' COMMENT '文件ID,与minio文件id一致' COLLATE 'utf8_unicode_ci',
+	`dept_id` BIGINT(20) NULL DEFAULT NULL COMMENT '部门ID',
+	`file_name` VARCHAR(256) NULL DEFAULT '' COMMENT '文件名称' COLLATE 'utf8_unicode_ci',
+	`file_type` VARCHAR(2) NULL DEFAULT '00' COMMENT '文件类型' COLLATE 'utf8_unicode_ci',
+	`file_size` VARCHAR(10) NULL DEFAULT '00' COMMENT '文件大小' COLLATE 'utf8_unicode_ci',
+	`file_path` VARCHAR(512) NULL DEFAULT '00' COMMENT '文件路径' COLLATE 'utf8_unicode_ci',
+	`bucket` VARCHAR(50) NULL DEFAULT '' COMMENT 'minio bucket' COLLATE 'utf8_unicode_ci',
+	`status` CHAR(1) NULL DEFAULT '0' COMMENT '文件状态（0正常 1停用）' COLLATE 'utf8_unicode_ci',
+	`del_flag` CHAR(1) NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）' COLLATE 'utf8_unicode_ci',
+	`create_by` VARCHAR(64) NULL DEFAULT '' COMMENT '创建者' COLLATE 'utf8_unicode_ci',
+	`create_time` DATETIME NULL DEFAULT NULL COMMENT '创建时间',
+	`update_by` VARCHAR(64) NULL DEFAULT '' COMMENT '更新者' COLLATE 'utf8_unicode_ci',
+	`update_time` DATETIME NULL DEFAULT NULL COMMENT '更新时间',
+	`remark` VARCHAR(500) NULL DEFAULT NULL COMMENT '备注' COLLATE 'utf8_unicode_ci',
+	PRIMARY KEY (`file_id`) USING BTREE
+)
+COMMENT='文件信息表'
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB
+;
